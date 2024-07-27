@@ -34,7 +34,7 @@ class JsWrappingGenerator extends Generator {
 
     final partsContent = <String>[];
     for (var element
-        in library.allElements.where((element) => !element.isSynthetic)) {
+    in library.allElements.where((element) => !element.isSynthetic)) {
       if (element.thisOrAncestorOfType<CompilationUnitElement>() ==
           library.element.definingCompilationUnit) {
         if (element is ClassElement && hasJsNameAnnotation(element)) {
@@ -53,9 +53,10 @@ class JsWrappingGenerator extends Generator {
         partsContent.join('\n');
   }
 
-  String generateForTemplate(ClassElement clazzTemplate) => clazzTemplate.isEnum
-      ? generateForEnum(clazzTemplate)
-      : generateForClass(clazzTemplate);
+  String generateForTemplate(ClassElement clazzTemplate) =>
+      clazzTemplate.isDartCoreEnum
+          ? generateForEnum(clazzTemplate)
+          : generateForClass(clazzTemplate);
 
   String generateForEnum(ClassElement clazzTemplate) {
     final doc = getDoc(clazzTemplate) ?? '';
@@ -69,7 +70,7 @@ class JsWrappingGenerator extends Generator {
     final castMethod = [
       '${clazzTemplate.name}? ${clazzTemplate.name}\$cast(value) {',
       ...values.map((e) =>
-          '  if (value == ${clazzTemplate.name}.$e) return ${clazzTemplate.name}.$e;'),
+      '  if (value == ${clazzTemplate.name}.$e) return ${clazzTemplate.name}.$e;'),
       '  return null;',
       '}',
     ].join('\n');
@@ -132,7 +133,7 @@ $castMethod
         );
         const paramName = 'value';
         final setterParam =
-            _convertParam(dartType, typeSystem, paramName, source);
+        _convertParam(dartType, typeSystem, paramName, source);
         extensionContent
           ..writeln(getDoc(field) ?? '')
           ..writeln('$typeAsString get $nameDart => $getterContent;')
@@ -230,11 +231,11 @@ $castMethod
             node.firstTokenAfterCommentAndMetadata.offset, node.body.offset);
         final args = method.parameters
             .map((v) => _convertParam(
-                  v.type,
-                  typeSystem,
-                  v.name,
-                  source,
-                ))
+          v.type,
+          typeSystem,
+          v.name,
+          source,
+        ))
             .join(',');
         final content = _convertReturnValue(
           method.returnType,
@@ -288,40 +289,40 @@ $extensionContent
   }
 
   String _convertReturnValue(
-    DartType dartType,
-    bool handleEnums,
-    String initialValue,
-    Source source,
-    TypeAnnotation? type, {
-    required bool bindThisToFunction,
-  }) =>
+      DartType dartType,
+      bool handleEnums,
+      String initialValue,
+      Source source,
+      TypeAnnotation? type, {
+        required bool bindThisToFunction,
+      }) =>
       _isCoreListWithTypeParameter(dartType)
           ? '$initialValue?.cast<${_getTypeParameterOfList(source, type, dartType)}>()'
           : bindThisToFunction && _isFunctionType(dartType)
-              ? "callMethod($initialValue, 'bind', [this])"
-              : dartType.isDartAsyncFuture
-                  ? 'promiseToFuture($initialValue)'
-                  : handleEnums && isEnum(dartType)
-                      ? '${dartType.getDisplayString(withNullability: false)}\$cast($initialValue)'
-                      : initialValue;
+          ? "callMethod($initialValue, 'bind', [this])"
+          : dartType.isDartAsyncFuture
+          ? 'promiseToFuture($initialValue)'
+          : handleEnums && isEnum(dartType)
+          ? '${dartType.getDisplayString(withNullability: false)}\$cast($initialValue)'
+          : initialValue;
 
   bool _needReturnTypeConversion(DartType dartType, bool handleEnums) =>
       _isCoreListWithTypeParameter(dartType) ||
-      _isFunctionType(dartType) ||
-      dartType.isDartAsyncFuture ||
-      handleEnums && isEnum(dartType);
+          _isFunctionType(dartType) ||
+          dartType.isDartAsyncFuture ||
+          handleEnums && isEnum(dartType);
 
   bool isEnum(DartType dartType) {
     final element = dartType.element;
-    return element is ClassElement && element.isEnum;
+    return element is ClassElement && element.isDartCoreEnum;
   }
 
   String _convertParam(
-    DartType dartType,
-    TypeSystem typeSystem,
-    String paramName,
-    Source source,
-  ) {
+      DartType dartType,
+      TypeSystem typeSystem,
+      String paramName,
+      Source source,
+      ) {
     if (_isFunctionType(dartType)) {
       var function = paramName;
       if (dartType is FunctionType) {
@@ -345,7 +346,7 @@ $extensionContent
         }
         if (hasParamChange) {
           function =
-              '(${declarationParams.join(',')}) => $paramName(${callParams.join(',')})';
+          '(${declarationParams.join(',')}) => $paramName(${callParams.join(',')})';
         }
       }
       if (typeSystem.isNullable(dartType)) {
@@ -360,18 +361,18 @@ $extensionContent
 
   bool _isCoreListWithTypeParameter(DartType dartType) =>
       dartType is InterfaceType &&
-      dartType.element.library.name == 'dart.core' &&
-      dartType.element.name == 'List' &&
-      dartType.typeArguments.isNotEmpty;
+          dartType.element.library.name == 'dart.core' &&
+          dartType.element.name == 'List' &&
+          dartType.typeArguments.isNotEmpty;
 
   bool _isFunctionType(DartType dartType) =>
       dartType is FunctionType || dartType.isDartCoreFunction;
 
   String _getTypeParameterOfList(
-    Source source,
-    TypeAnnotation? type,
-    DartType dartType,
-  ) {
+      Source source,
+      TypeAnnotation? type,
+      DartType dartType,
+      ) {
     if (type != null) {
       return source.contents.data.substring(type.offset + 'List<'.length,
           type.end - (type.question == null ? 0 : 1) - '>'.length);
@@ -393,25 +394,25 @@ String? getDoc(Element element) {
 }
 
 Iterable<DartObject> getAnnotations(
-  LibraryElement library,
-  List<ElementAnnotation> metadata,
-  String libraryName,
-  String className,
-) =>
+    LibraryElement library,
+    List<ElementAnnotation> metadata,
+    String libraryName,
+    String className,
+    ) =>
     metadata.map((a) => a.computeConstantValue()).whereNotNull().where((e) =>
         library.typeSystem.isAssignableTo(
             e.type!, getType(library, libraryName, className)!.thisType));
 
 bool hasAnonymousAnnotation(ClassElement clazz) => clazz.metadata
     .where((a) =>
-        a.element!.library!.name == 'js' && a.element!.name == 'anonymous')
+a.element!.library!.name == 'js' && a.element!.name == 'anonymous')
     .isNotEmpty;
 
 // getAnnotations(clazz.library, clazz.metadata, 'js', '_Anonymous')
 //     .isNotEmpty;
 
 Iterable<DartObject> getJsNameAnnotations(
-        LibraryElement library, List<ElementAnnotation> metadata) =>
+    LibraryElement library, List<ElementAnnotation> metadata) =>
     getAnnotations(library, metadata, 'js_wrapping', 'JsName');
 
 bool hasJsNameAnnotation(ClassElement clazz) =>
@@ -426,6 +427,6 @@ String? getJsName(Element element) =>
 ClassElement? getType(
     LibraryElement libElement, String libName, String className) {
   final lib =
-      libElement.importedLibraries.firstWhereOrNull((l) => l.name == libName);
-  return lib?.getType(className);
+  libElement.importedLibraries.firstWhereOrNull((l) => l.name == libName);
+  return lib?.getClass(className);
 }
